@@ -1,0 +1,67 @@
+> #AVERAGE CHANGE POINT 
+> mean(STEP1NOTHRES)
+[1] 16.038
+> 
+> #NUMBER OF THRESHOLDS
+> table(STEP2NOTHRES)
+STEP2NOTHRES
+  2   3   4 
+977  19   4 
+> 
+> #TOTAL TIME
+> sum(TIME)
+[1] 779.2018
+> 
+> cTHRES<-cTHRESBIAS<-cTHRESSD<-cPARA<-cPARABIAS<-cPARASD<-cCOUNT<-kk<-0
+> 
+> 
+> for(jj in 1:1000){
++     if(STEP2NOTHRES[jj] == noTRUEt){
++         cTHRES<-cTHRES+STEP2THRES[[jj]]
++         cTHRESBIAS<-cTHRESBIAS+(STEP2THRES[[jj]]-TRUEthre)
++         cTHRESSD<-cTHRESSD+(STEP2THRES[[jj]]-TRUEthre)^2
++         cPARA<-cPARA+STEP2PARA[[jj]]
++         cPARABIAS<-cPARABIAS+(STEP2PARA[[jj]]-TRUEpara)
++         cPARASD<-cPARASD+(STEP2PARA[[jj]]-TRUEpara)^2
++         cCOUNT<-cCOUNT+(STEP2OBS[[jj]])
++         kk<-kk+1
++     }
++ }
+> 
+> #AVG THRESHOLDS
+> cTHRES/kk
+[1] -2.004065  1.997482
+> 
+> #BIAS THRESHOLDS
+> cTHRESBIAS/kk
+[1] -0.004064893 -0.002517778
+> 
+> #ESD THRESHOLDS
+> sqrt(cTHRESSD/kk)
+[1] 0.02660881 0.01629955
+> 
+> #AVG PARA
+> cPARA/kk
+             [,1]         [,2]        [,3]
+[1,]  0.007814742 -0.001569739 -0.02581203
+[2,]  0.801780278  1.898960847  0.60470865
+[3,] -0.200628560 -0.809376135 -0.99392370
+> 
+> #BIAS PARA
+> cPARABIAS/kk
+              [,1]          [,2]         [,3]
+[1,]  0.0078147416 -0.0015697386 -0.025812027
+[2,]  0.0017802783 -0.0010391530  0.004708645
+[3,] -0.0006285599  0.0006238651  0.006076296
+> 
+> #ESD PARA
+> sqrt(cPARASD/kk)
+           [,1]       [,2]       [,3]
+[1,] 0.21219270 0.03827217 0.32314891
+[2,] 0.06169686 0.03829087 0.09996465
+[3,] 0.03223581 0.02209482 0.07273833
+> 
+> #AVG COUNT
+> cCOUNT/kk
+        COUNT                 
+[1,] 312.6274 740.9795 144.393
