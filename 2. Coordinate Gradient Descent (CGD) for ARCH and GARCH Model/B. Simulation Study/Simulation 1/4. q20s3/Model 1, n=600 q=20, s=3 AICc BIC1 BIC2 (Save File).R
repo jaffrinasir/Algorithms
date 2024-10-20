@@ -1,4 +1,4 @@
-setwd("C:/Users/Jaffri/Dropbox/Journal Papers drafts/2020/Simulation Studies-Rcode/B. Pure GARCH models/B. Simulation Study")
+setwd("/home/jaffri/Documents/Simulation")
 ### LOAD R PACKAGES #######################################
 #library(rpgm)
 library(robustbase)
@@ -9,20 +9,20 @@ library(matrixcalc)
 ###########################################################
 ### LOAD DEFINITIONS      ####################################################
 SamSize<-600
-maxREP<-1000
-### LOAD DATASET GARCH(1,3) ####################################################
-GARCH<-function(n){
+minREP<-1
+maxREP<-1009
+TRAIN<-90 #IN PERCENTAGE
+TEST<-10 #IN PERCENTAGE
+EXCLUDE<-c(10,29,237, 356,465,525,826,905,945)
+### LOAD DATASET ARCH(12) ####################################################
+ARCH<-function(n, REPLI){
   #A.] GENERATE SIMULATED DATA WITH PREDEFINED PARAMETERS
-  library(mvtnorm)
-  library(MASS)
-  library(fBasics)
-  library(matrixcalc)
-  rCh<- 1
-  sCh<- 3 
+  rCh<- 12
   n<-n+200  #Obs. below 201 will be deleted 
   Q<- 1 #Number of Variate
   
-  ####### Generate r.v of white noise #########################################
+  #######  Generate r.v of white noise ########################################
+  set.seed(REPLI)
   eta<-rmvnorm(n, mean=c(0), diag(1)) 
   eta<-t(eta)
   #############################################################################
@@ -30,13 +30,20 @@ GARCH<-function(n){
   ##INTERCEPT
   paraGA0<-matrix(c(0.01),nrow=Q,byrow=TRUE)
   #### MA(p) representative
-  paraGAa1<-matrix(c(0.3),nrow=Q,byrow=TRUE)
-  #### AR(q) representative
-  paraGAb1<-matrix(c(0.1),nrow=Q,byrow=TRUE)
-  paraGAb2<-matrix(c(0),nrow=Q,byrow=TRUE)
-  paraGAb3<-matrix(c(0.55),nrow=Q,byrow=TRUE)
+  paraGAa1<-matrix(c(0.15),nrow=Q,byrow=TRUE)
+  paraGAa2<-matrix(c(0),nrow=Q,byrow=TRUE)
+  paraGAa3<-matrix(c(0),nrow=Q,byrow=TRUE)
+  paraGAa4<-matrix(c(0.3),nrow=Q,byrow=TRUE)
+  paraGAa5<-matrix(c(0),nrow=Q,byrow=TRUE)
+  paraGAa6<-matrix(c(0.2),nrow=Q,byrow=TRUE)
+  paraGAa7<-matrix(c(0),nrow=Q,byrow=TRUE)
+  paraGAa8<-matrix(c(0),nrow=Q,byrow=TRUE)
+  paraGAa9<-matrix(c(0),nrow=Q,byrow=TRUE)
+  paraGAa10<-matrix(c(0.15),nrow=Q,byrow=TRUE)
+  paraGAa11<-matrix(c(0),nrow=Q,byrow=TRUE)
+  paraGAa12<-matrix(c(0.19),nrow=Q,byrow=TRUE)
 
-  H<-max(rCh,sCh)
+  H<-max(rCh)
   ht<-abs(t(rmvnorm(n=H, mean=c(0), sigma=matrix(c(1)))))  #HETEROS. OBS
   err<-t(rmvnorm(n=H, mean=c(0), sigma=matrix(c(1)))) #ERR. TERM
   Y <-t(rmvnorm(n=H, mean=c(0), sigma=matrix(c(1))))
@@ -45,32 +52,28 @@ GARCH<-function(n){
   err<-cbind(err,ZERO)
   Y<-cbind(Y,ZERO) 
 
-GARCHr<-sapply( paste('paraGAa', 1:rCh, sep=''), get ,envir=sys.frame(sys.parent(0)))
-GARCHs<-sapply( paste('paraGAb', 1:sCh, sep=''), get ,envir=sys.frame(sys.parent(0)))
+ARCHr<-sapply( paste('paraGAa', 1:rCh, sep=''), get ,envir=sys.frame(sys.parent(0)))
 
     for (i in (H+1):((dim(eta)[2]))) {
-      sumRg<-sumSg<-0
+      sumRg<-0
        for(j in 1:rCh){
-        sumRg<-sumRg + (GARCHr[[j]]%*%((err[,(i-j)])^{2}))
+        sumRg<-sumRg + (ARCHr[[j]]%*%(err[,(i-j)]^{2}))
        }
-       for(k in 1:sCh){
-        sumSg<-sumSg + (GARCHs[[k]]%*%ht[,(i-k)])
-       }
-     
-    ht[,i]<-paraGA0+(sumRg)+(sumSg)
+    ht[,i]<-paraGA0+(sumRg)
     err[,i]<-eta[,i]%*%sqrt(ht[,i])
     Y[,i]<-err[,i]
   }
 Y<-Y[,c(-1:-200)]; #THIS TO REMOVE FIRST 200 OBSERVATIONS TO AVOID SET.SEED EFFECT
 Y1<-as.matrix(Y)
 
-coefGARCH<-cbind(paraGA0, paraGAa1,
-  paraGAb1,paraGAb2,paraGAb3, matrix(0,ncol=3))
+coefARCH<-cbind(paraGA0, paraGAa1, paraGAa2, paraGAa3,paraGAa4,
+                         paraGAa5, paraGAa6, paraGAa7,paraGAa8,
+                         paraGAa9, paraGAa10, paraGAa11,paraGAa12,matrix(0,ncol=8),matrix(0,ncol=3))
 
-LAGNONZERO<-c(1,2,3,5)
-LAGNONZERO2<-c(1,1,1,0,1,0,0,0)  #1: non-zero 0: zero
-ALLDATA<-list(Y1,err,coefGARCH,rCh,sCh,LAGNONZERO,LAGNONZERO2,sum(LAGNONZERO2))
-names(ALLDATA)<-c("Y1","err","coefGARCH","Gr","Gs","LAGNONZERO","LAGNONZERO2","COUNTNZ")
+LAGNONZERO<-c(1,2,5,7,11,13)   #LOCATION OF NONZERO PARAMETERS
+LAGNONZERO2<-c(1,1,0,0,1,0,1,0,0,0,1,0,1,rep(0,8),rep(0,3))  #1: non-zero 0: zero
+ALLDATA<-list(Y1,err,coefARCH,rCh,LAGNONZERO,LAGNONZERO2,sum(LAGNONZERO2))
+names(ALLDATA)<-c("Y1","err","coefARCH","Gr","LAGNONZERO","LAGNONZERO2","COUNTNZ")
 return(ALLDATA)
 }
 ##############################################################################
@@ -82,12 +85,74 @@ Mode <- function(x) {
   if(length(x)==length(ux[tab == max(tab)])){print("No mode")}else{ux[tab == max(tab)]}
 }
 #### BAYESIAN INFORMATION CRITERION (BIC) ###################################
-BICFUNC<-function(SIGMASQ0,ERRSQ0,PARA,Ne,Cn){
+ICFUNC<-function(SIGMASQ0,ERRSQ0,PARA,Ne,OPTION){
   return(
-    2*(sum(log(SIGMASQ0)+(ERRSQ0/SIGMASQ0)))+(sum(PARA != 0)*log(Ne)*Cn)
+    if(OPTION==1){
+      2*(sum(log(SIGMASQ0)+(ERRSQ0/SIGMASQ0)))+(sum(PARA != 0)*2*Ne/(Ne-sum(PARA != 0)-1))
+    }
+    else if(OPTION==2){
+      2*(sum(log(SIGMASQ0)+(ERRSQ0/SIGMASQ0)))+(sum(PARA != 0)*log(Ne)*1)
+      }else if(OPTION==3){
+      2*(sum(log(SIGMASQ0)+(ERRSQ0/SIGMASQ0)))+(sum(PARA != 0)*log(Ne)*2)
+      }
   )
 }
 #LIKELIHOOD IS MINIMIZED (NEGATIVE LIKELIHOOD)
+
+#PREDICTION
+RMSE0<-function(ERR2M,SIGMASQM){
+  if(length(ERR2M)==length(SIGMASQM)){
+    return(
+        sqrt(sum((ERR2M-SIGMASQM)^2)/length(ERR2M))
+      )
+  }
+}
+
+MAPE0<-function(ERR2M,SIGMASQM){
+  if(length(ERR2M)==length(SIGMASQM)){
+    return(
+        sum(abs((ERR2M-SIGMASQM)/ERR2M))/length(ERR2M)
+      )
+  }
+}
+
+MAE0<-function(ERR2M,SIGMASQM){
+  if(length(ERR2M)==length(SIGMASQM)){
+    return(
+        sum(abs(ERR2M-SIGMASQM))/length(ERR2M)
+      )
+  }
+}
+
+STEPPRED<-function(PARA,ERR2i){   ### RECURSIVE COMPUTATION OF SIGMA^2_{T}
+if( (rC>0) && (sC==0) ){     ### ARCH(rC)
+ERR2A<-SIGMASQA<-rep(0,h)
+ERR2A<-c(ERR2A,ERR2i)    #MERGING INITIAL VALUES + PRE-COMPUTED SQUARED ERRORS
+
+  for( t in 1:length(ERR2i)){
+    SUM1<-0
+    for(ii in 1:rC){
+    SUM1<- SUM1 + (PARA[ii+1]*ERR2A[t-ii+h])
+  }
+  SIGMASQA[t+h]<-PARA[1]+SUM1
+  }
+}else if( (rC>0) && (sC>0) ){ ### GARCH(rC,sC)
+ERR2A<-SIGMASQA<-rep(0,h)
+ERR2A<-c(ERR2A,ERR2i)    #MERGING INITIAL VALUES + PRE-COMPUTED SQUARED ERRORS
+for( t in 1:length(ERR2i)){
+  SUM1<-SUM2<-0
+  for(ii in 1:rC){
+    SUM1<- SUM1 + (PARA[ii+1]*ERR2A[t-ii+h])
+  }
+  for(jj in (rC+1):(Dt-1)){
+    SUM2<- SUM2 + (PARA[jj+1]*SIGMASQA[t-jj+rC+h])
+  }
+  SIGMASQA[t+h]<-PARA[1]+SUM1+SUM2
+  } #END FOR
+}
+return(list(ERR2A[-1:-h],SIGMASQA[-1:-h]))
+} #END STEPB0
+
 #############################################################################
 
 #### *** LIKELIHOOD FUNC ####################################################
@@ -361,7 +426,7 @@ ArM<-STEPE0(PARAs1CGD,LAMBDAi,AWEIGHTi,L,dB,Qq,ERR2)
 PARAs1CGD[L]<-max((PARAs1CGD[L]+(ArM*(dB[L]))),0)
   }
 }##################################### END CYCLE
-if( (norm(matrix(BEFORE-PARAs1CGD),type = "1") < 0.0001) || (CYCLEGCD==10000) ){
+if( (norm(matrix(BEFORE-PARAs1CGD),type = "1") < 0.001) || (CYCLEGCD==10000) ){
   ITERFULL<-FALSE
 }
 CYCLEGCD<-CYCLEGCD+1
@@ -372,66 +437,56 @@ return(PARAs1CGD)
 
 
 ### START : SIMULATION ########################################################
-start_time <- Sys.time()
-for(REPLICATE in 1:maxREP){
+LISTNO<-c(minREP:maxREP)
+LISTNO<-LISTNO[! LISTNO %in% EXCLUDE]
+for(REPLICATE in LISTNO){
 cat("REPLICATION=", REPLICATE,"\n")
-rC<-1
-sC<-6
+rC<-20
+sC<-3
 Dt<-(1+rC+sC)
 ### STEP 1: generate dataset and other values. #################################
-GARCH1<-GARCH(SamSize)
-ERR<-as.vector(GARCH1$Y1)
+ARCH1<-ARCH(SamSize,REPLICATE)
+ERR<-as.vector(ARCH1$Y1)[1:(TRAIN/100*SamSize)]
+ERRa<-as.vector(ARCH1$Y1)[((TRAIN/100*SamSize)+1):SamSize]
 ERR2<-as.vector(ERR)^2                 #COMPUTE SQUARE ERRORS
+ERR2a<-as.vector(ERRa)^2 
 h<-max(rC,sC)
-if(REPLICATE==1){
-### COLLECT SERIES #############################################################
-listSERIES1<-listERR2<-list()
-#### TRUE VALUES #########
-  TRUEPARA<-GARCH1$coefGARCH
-  NONZERO<-GARCH1$LAGNONZERO
-  CTRUENONZERO<-GARCH1$COUNTNZ
-  propoTrue<-GARCH1$LAGNONZERO2
-#### COUNT ESTIMATED NONZERO VARIABLES
-  cNonZerofull<-cNonZeroadaplasso<-integer()
-  cBIASNonZerofull<-cBIASNonZeroadaplasso<-integer()
-  cEVARNonZerofull<-cEVARNonZeroadaplasso<-integer()
-#### CHECK TRUE OR FALSE MODEL
-  pickAllSigfull<-pickAllSigadaplasso<-0
-  isTRUEinfull<-isTRUEinadaplasso<-0
-#### VARIABLES FOR ESTIMATED PARAMETERS
-  colESTfull<-colESTadaplasso<-list()
-  colBIASfull<-colBIASadaplasso<-list()
-  colEVARfull<-colEVARadaplasso<-list()
-  cpropoESTfull<-cpropoESTadaplasso<-list()
-               }
-listSERIES1[[REPLICATE]]<-ERR
-listERR2[[REPLICATE]]<-ERR2
+  TRUEPARA<-ARCH1$coefARCH
+  NONZERO<-ARCH1$LAGNONZERO
+  CTRUENONZERO<-ARCH1$COUNTNZ
+  propoTrue<-ARCH1$LAGNONZERO2
 ### BEGIN : FULL CONSTRAINT QMLE ############################################
 PARAinit<-c(mean(ERR2),rep(0, (Dt-1)))
 LAMBDAa<-0
 AWEIGHTa<-c(0,rep(1,rC),rep(1,sC))
+start_time <- Sys.time()
 PARAFULL<-GARCHCGD(LAMBDAa,AWEIGHTa,PARAinit)
+end_time <- Sys.time()
 ### COLLECT RESULT: FULL QMLE
-colESTfull[[REPLICATE]]<-PARAFULL
-colBIASfull[[REPLICATE]]<-(PARAFULL-TRUEPARA)
-colEVARfull[[REPLICATE]]<-(PARAFULL-TRUEPARA)^2
-pickAllSigfull[REPLICATE]<-all(NONZERO%in%which(PARAFULL!=0))
-isTRUEinfull[REPLICATE]<-isTRUE(all.equal(NONZERO,which(PARAFULL!=0)))
-cNonZerofull[REPLICATE]<-sum(as.integer(PARAFULL!=0))
-cBIASNonZerofull[REPLICATE]<- CTRUENONZERO-sum(as.integer(PARAFULL!=0))
-cEVARNonZerofull[REPLICATE]<- (CTRUENONZERO-sum(as.integer(PARAFULL!=0)))^2
-cpropoESTfull[[REPLICATE]]<-as.integer(as.integer(PARAFULL!=0))
+A1<-PARAFULL
+A2<-(PARAFULL-TRUEPARA)
+A3<-(PARAFULL-TRUEPARA)^2
+A4<-all(NONZERO%in%which(PARAFULL!=0))
+A5<-isTRUE(all.equal(NONZERO,which(PARAFULL!=0)))
+A6<-sum(as.integer(PARAFULL!=0))
+A7<- CTRUENONZERO-sum(as.integer(PARAFULL!=0))
+A8<- (CTRUENONZERO-sum(as.integer(PARAFULL!=0)))^2
+A9<-as.integer(as.integer(PARAFULL!=0))
+A10<-RMSE0(STEPPRED(PARAFULL,ERR2a)[[1]],STEPPRED(PARAFULL,ERR2a)[[2]])
+A11<-MAPE0(STEPPRED(PARAFULL,ERR2a)[[1]],STEPPRED(PARAFULL,ERR2a)[[2]])
+A12<-MAE0(STEPPRED(PARAFULL,ERR2a)[[1]],STEPPRED(PARAFULL,ERR2a)[[2]])
 ### END : FULL CONSTRAINT QMLE ##############################################
 
 #########** BEGIN ADAPTIVE LASSO ############################################
 PARAWEIGHT<-PARAFULL
 PARAWEIGHT[PARAWEIGHT==0]<-1e-20
-BICadaplasso<-numeric()
+AICcadaplasso<-BIC1adaplasso<-BIC2adaplasso<-numeric()
 PARAadlasso<-c(mean(ERR2),rep(0, (Dt-1)))
 cPARAadaplasso<-list()
 AWEIGHTb<-c(0,(PARAWEIGHT[2:(Dt)]^(-1)))
 LAMBDAlist<-c(seq(20, 1, length.out= 20), seq(0.9, 0, length.out= 20))
 
+start_timeA <- Sys.time()
 for(KK in 1:length(LAMBDAlist)){
 LAMBDAb<-LAMBDAlist[KK]
 if(KK==1){
@@ -439,128 +494,69 @@ PARAinit2<-PARAadlasso<-cPARAadaplasso[[KK]]<-GARCHCGD(LAMBDAb,AWEIGHTb,PARAinit
 }else{
 PARAinit2<-PARAadlasso<-cPARAadaplasso[[KK]]<-GARCHCGD(LAMBDAb,AWEIGHTb,PARAinit2)	
 }
-### COMPUTE BIC ################################################################
-BICadaplasso[KK]<-BICFUNC(STEPB0(cPARAadaplasso[[KK]],ERR2),ERR2,cPARAadaplasso[[KK]],length(ERR2),5)
+### COMPUTE IC ################################################################
+AICcadaplasso[KK]<-ICFUNC(STEPB0(cPARAadaplasso[[KK]],ERR2),ERR2,cPARAadaplasso[[KK]],length(ERR2),1)
+BIC1adaplasso[KK]<-ICFUNC(STEPB0(cPARAadaplasso[[KK]],ERR2),ERR2,cPARAadaplasso[[KK]],length(ERR2),2)
+BIC2adaplasso[KK]<-ICFUNC(STEPB0(cPARAadaplasso[[KK]],ERR2),ERR2,cPARAadaplasso[[KK]],length(ERR2),3)
 ### END STEP 3B ################################################################
 }
-RePARAadaplassoBIC<-cPARAadaplasso[[which(BICadaplasso==min(BICadaplasso))[1]]]
+end_timeA <- Sys.time()
+##### AICc
+RePARAadaplassoAICc<-cPARAadaplasso[[which(AICcadaplasso==min(AICcadaplasso))[1]]]
 #### COLLECT RESULT: ADAPTIVE LASSO
-colESTadaplasso[[REPLICATE]]<-RePARAadaplassoBIC
-colBIASadaplasso[[REPLICATE]]<-(RePARAadaplassoBIC-TRUEPARA)
-colEVARadaplasso[[REPLICATE]]<-(RePARAadaplassoBIC-TRUEPARA)^2
-pickAllSigadaplasso[REPLICATE]<-all(NONZERO%in%which(RePARAadaplassoBIC!=0))
-isTRUEinadaplasso[REPLICATE]<-isTRUE(all.equal(NONZERO,which(RePARAadaplassoBIC!=0)))
-cNonZeroadaplasso[REPLICATE]<-sum(as.integer(RePARAadaplassoBIC!=0))
-cBIASNonZeroadaplasso[REPLICATE]<- CTRUENONZERO-sum(as.integer(RePARAadaplassoBIC!=0))
-cEVARNonZeroadaplasso[REPLICATE]<- (CTRUENONZERO-sum(as.integer(RePARAadaplassoBIC!=0)))^2
-cpropoESTadaplasso[[REPLICATE]]<-as.integer(as.integer(RePARAadaplassoBIC!=0))
+B1<-RePARAadaplassoAICc
+B2<-(RePARAadaplassoAICc-TRUEPARA)
+B3<-(RePARAadaplassoAICc-TRUEPARA)^2
+B4<-all(NONZERO%in%which(RePARAadaplassoAICc!=0))
+B5<-isTRUE(all.equal(NONZERO,which(RePARAadaplassoAICc!=0)))
+B6<-sum(as.integer(RePARAadaplassoAICc!=0))
+B7<- CTRUENONZERO-sum(as.integer(RePARAadaplassoAICc!=0))
+B8<- (CTRUENONZERO-sum(as.integer(RePARAadaplassoAICc!=0)))^2
+B9<-as.integer(as.integer(RePARAadaplassoAICc!=0))
+B10<-RMSE0(STEPPRED(RePARAadaplassoAICc,ERR2a)[[1]],STEPPRED(RePARAadaplassoAICc,ERR2a)[[2]])
+B11<-MAPE0(STEPPRED(RePARAadaplassoAICc,ERR2a)[[1]],STEPPRED(RePARAadaplassoAICc,ERR2a)[[2]])
+B12<-MAE0(STEPPRED(RePARAadaplassoAICc,ERR2a)[[1]],STEPPRED(RePARAadaplassoAICc,ERR2a)[[2]])
+
+##### BIC1
+RePARAadaplassoBIC1<-cPARAadaplasso[[which(BIC1adaplasso==min(BIC1adaplasso))[1]]]
+#### COLLECT RESULT: ADAPTIVE LASSO
+C1<-RePARAadaplassoBIC1
+C2<-(RePARAadaplassoBIC1-TRUEPARA)
+C3<-(RePARAadaplassoBIC1-TRUEPARA)^2
+C4<-all(NONZERO%in%which(RePARAadaplassoBIC1!=0))
+C5<-isTRUE(all.equal(NONZERO,which(RePARAadaplassoBIC1!=0)))
+C6<-sum(as.integer(RePARAadaplassoBIC1!=0))
+C7<- CTRUENONZERO-sum(as.integer(RePARAadaplassoBIC1!=0))
+C8<- (CTRUENONZERO-sum(as.integer(RePARAadaplassoBIC1!=0)))^2
+C9<-as.integer(as.integer(RePARAadaplassoBIC1!=0))
+C10<-RMSE0(STEPPRED(RePARAadaplassoBIC1,ERR2a)[[1]],STEPPRED(RePARAadaplassoBIC1,ERR2a)[[2]])
+C11<-MAPE0(STEPPRED(RePARAadaplassoBIC1,ERR2a)[[1]],STEPPRED(RePARAadaplassoBIC1,ERR2a)[[2]])
+C12<-MAE0(STEPPRED(RePARAadaplassoBIC1,ERR2a)[[1]],STEPPRED(RePARAadaplassoBIC1,ERR2a)[[2]])
+
+##### BIC2
+RePARAadaplassoBIC2<-cPARAadaplasso[[which(BIC2adaplasso==min(BIC2adaplasso))[1]]]
+#### COLLECT RESULT: ADAPTIVE LASSO
+D1<-RePARAadaplassoBIC2
+D2<-(RePARAadaplassoBIC2-TRUEPARA)
+D3<-(RePARAadaplassoBIC2-TRUEPARA)^2
+D4<-all(NONZERO%in%which(RePARAadaplassoBIC2!=0))
+D5<-isTRUE(all.equal(NONZERO,which(RePARAadaplassoBIC2!=0)))
+D6<-sum(as.integer(RePARAadaplassoBIC2!=0))
+D7<- CTRUENONZERO-sum(as.integer(RePARAadaplassoBIC2!=0))
+D8<- (CTRUENONZERO-sum(as.integer(RePARAadaplassoBIC2!=0)))^2
+D9<-as.integer(as.integer(RePARAadaplassoBIC2!=0))
+D10<-RMSE0(STEPPRED(RePARAadaplassoBIC2,ERR2a)[[1]],STEPPRED(RePARAadaplassoBIC2,ERR2a)[[2]])
+D11<-MAPE0(STEPPRED(RePARAadaplassoBIC2,ERR2a)[[1]],STEPPRED(RePARAadaplassoBIC2,ERR2a)[[2]])
+D12<-MAE0(STEPPRED(RePARAadaplassoBIC2,ERR2a)[[1]],STEPPRED(RePARAadaplassoBIC2,ERR2a)[[2]])
+
 ### END : ADAPTIVE LASSO  ##############################################
+LISTsimu<-list(
+  list(A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11,A12),
+  list(B1,B2,B3,B4,B5,B6,B7,B8,B9,B10,B11,B12),
+  list(C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12),
+  list(D1,D2,D3,D4,D5,D6,D7,D8,D9,D10,D11,D12),
+  list(end_time-start_time, end_timeA-start_timeA)
+    )
+LISTA<-list(assign(paste("LIST",REPLICATE,sep=""),LISTsimu))
+save(LISTA,file=paste("Rlistq20s3/600/SIMUAIC600MODEL1.(",REPLICATE,").RData",sep = ""))
 }
-end_time <- Sys.time()
-
-#### COLLECT RESULTS ########################################################################
-for(REPLICATE in 1:maxREP){
-if(REPLICATE==1){
-### RESULT: FULL QMLE
-colPARAmeanQMLE<-cbind(colESTfull[[REPLICATE]])
-colPARAbiasQMLE<-cbind(t(colBIASfull[[REPLICATE]]))
-colPARAVARQMLE<-cbind(t(colEVARfull[[REPLICATE]]))
-colPropofull<-cbind(cpropoESTfull[[REPLICATE]])
-### RESULT: ADAPTIVE LASSO QMLE
-colPARAmeanadapLASSO<-cbind(colESTadaplasso[[REPLICATE]])
-colPARAbiasadapLASSO<-cbind(t(colBIASadaplasso[[REPLICATE]]))
-colPARAVARadapLASSO<-cbind(t(colEVARadaplasso[[REPLICATE]]))
-colPropoadapLASSO<-cbind(cpropoESTadaplasso[[REPLICATE]])
- }else{
-### RESULT: FULL QMLE
-colPARAmeanQMLE<-cbind(colPARAmeanQMLE,as.matrix(colESTfull[[REPLICATE]]))
-colPARAbiasQMLE<-cbind(colPARAbiasQMLE,t(colBIASfull[[REPLICATE]]))
-colPARAVARQMLE<-cbind(colPARAVARQMLE,t(colEVARfull[[REPLICATE]]))
-colPropofull<-cbind(colPropofull,as.matrix(cpropoESTfull[[REPLICATE]]))
-### RESULT: ADAPTIVE LASSO QMLE
-colPARAmeanadapLASSO<-cbind(colPARAmeanadapLASSO,as.matrix(colESTadaplasso[[REPLICATE]]))
-colPARAbiasadapLASSO<-cbind(colPARAbiasadapLASSO,t(colBIASadaplasso[[REPLICATE]]))
-colPARAVARadapLASSO<-cbind(colPARAVARadapLASSO,t(colEVARadaplasso[[REPLICATE]]))
-colPropoadapLASSO<-cbind(colPropoadapLASSO,as.matrix(cpropoESTadaplasso[[REPLICATE]]))
- }
-}
-
-### RESULT: FULL QMLE ##################################################
-## COUNT NON-ZERO FOR FULL QMLE
-min(cNonZerofull)                #MINIMUM
-max(cNonZerofull)                #MAXIMUM
-round(mean(cNonZerofull))        #MEAN (rounded)
-Mode(cNonZerofull)               #MODE
-sum(cBIASNonZerofull)/REPLICATE  #BIAS
-sqrt(sum(cEVARNonZerofull)/REPLICATE)  #ESD
-
-table(pickAllSigfull)
-table(isTRUEinfull)
-
-PARAmeanQMLE<-rowSums(colPARAmeanQMLE)/REPLICATE; 
-rowMins(colPARAmeanQMLE)
-rowMedians(colPARAmeanQMLE)
-rowMaxs(colPARAmeanQMLE)
-PARAbiasQMLE<-rowSums(colPARAbiasQMLE)/REPLICATE; 
-PARAesdQMLE<-sqrt(rowSums(colPARAVARQMLE)/REPLICATE); 
-PARApropoQMLE<-rowSums(colPropofull)/REPLICATE; 
-########################################################################
-
-### RESULT: ADAPTIVE LASSO #############################################
-## COUNT NON-ZERO FOR ADAPTIVE LASSO
-min(cNonZeroadaplasso)                #MINIMUM
-max(cNonZeroadaplasso)                #MAXIMUM
-round(mean(cNonZeroadaplasso))        #MEAN (rounded)
-Mode(cNonZeroadaplasso)               #MODE
-sum(cBIASNonZeroadaplasso)/REPLICATE  #BIAS
-sqrt(sum(cEVARNonZeroadaplasso)/REPLICATE)  #ESD
-
-table(pickAllSigadaplasso)
-table(isTRUEinadaplasso)
-
-PARAmeanadapLASSO<-rowSums(colPARAmeanadapLASSO)/REPLICATE; 
-rowMins(colPARAmeanadapLASSO)
-rowMedians(colPARAmeanadapLASSO)
-rowMaxs(colPARAmeanadapLASSO)
-PARAbiasadapLASSO<-rowSums(colPARAbiasadapLASSO)/REPLICATE; 
-PARAesdadapLASSO<-sqrt(rowSums(colPARAVARadapLASSO)/REPLICATE); 
-PARApropadapLASSO<-rowSums(colPropoadapLASSO)/REPLICATE;
-##########################################################################
-
-  simuTIME<- end_time - start_time
-  TEXTtime<-"#### TIME TO FINISH SIMULATION STUDY ####"
-  TEXT01<-"#### RESULT: FULL QMLE ####" 
-  TEXT02<-"## COUNT NON-ZERO FOR FULL QMLE ##"
-  TEXT03<-"## PARAMETER ESTIMATES: FULL QMLE ##"
-  TEXT04<-"#### RESULT: ADAPTIVE LASSO ####"  
-  TEXT05<-"## COUNT NON-ZERO FOR ADAPTIVE LASSO ##"
-  TEXT06<-"## PARAMETER ESTIMATES: ADAPTIVE LASSO ##"
-
-LISTFULL0<-list(TEXTtime, simuTIME , 
-	            TEXT01, TEXT02, min(cNonZerofull), max(cNonZerofull), round(mean(cNonZerofull)), Mode(cNonZerofull),
-	            sum(cBIASNonZerofull)/REPLICATE, sqrt(sum(cEVARNonZerofull)/REPLICATE),
-	            table(pickAllSigfull), table(isTRUEinfull), 
-	            TEXT03, PARAmeanQMLE, rowMins(colPARAmeanQMLE), rowMedians(colPARAmeanQMLE),
-	            rowMaxs(colPARAmeanQMLE), PARAbiasQMLE, PARAesdQMLE, PARApropoQMLE,
-                TEXT04, TEXT05, min(cNonZeroadaplasso), max(cNonZeroadaplasso), round(mean(cNonZeroadaplasso)), Mode(cNonZeroadaplasso),
-                sum(cBIASNonZeroadaplasso)/REPLICATE, sqrt(sum(cEVARNonZeroadaplasso)/REPLICATE),
-                table(pickAllSigadaplasso), table(isTRUEinadaplasso),
-                TEXT06, PARAmeanadapLASSO, rowMins(colPARAmeanadapLASSO), rowMedians(colPARAmeanadapLASSO), 
-                rowMaxs(colPARAmeanadapLASSO), PARAbiasadapLASSO,  PARAesdadapLASSO, PARApropadapLASSO
-             )
-
-names(LISTFULL0)<-c("", "Simulation time", 
-              "", "", "Minimum", "Maximum", "Average", "Mode",
-              "Bias", "ESD",
-              "Pick All Relevant", "Is Correct model??", 
-              "", "Est. Avg. Full", "Est. Min. Full", "Est. Med. Full",
-              "Est. Max. Full", "Est. Bias Full", "Est. ESD Full", "Est. propo Full",
-                "", "", "Minimum", "Maximum", "Average", "Mode",
-                "Bias", "ESD",
-                "Pick All Relevant", "Is Correct model??",
-                "", "Est. Avg. A.LASSO", "Est. Min. A.LASSO", "Est. Med. A.LASSO", 
-                "Est. Max. A.LASSO", "Est. Bias A.LASSO",  "Est. ESD A.LASSO", "Est. propo A.LASSO"
-            )
-
-OUTA<-capture.output(list(LISTFULL0)); 
-cat("n=",SamSize,"Replication=",maxREP,OUTA,file="./Results/Ver1/Model 2/Model2n600s6.txt",sep="\n", append = FALSE)
