@@ -2,12 +2,7 @@
 title: "SETAR-GLASSO-BE Algorithm"
 author: "Muhammad Jaffri Mohd Nasir"
 date: "2025-04-13"
-output: html_document
 ---
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
 ## Announcement 
 
