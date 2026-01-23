@@ -1,4 +1,4 @@
-## Announcement (13/4/2025)
+## Announcement (23/1/2026)
 
 I am happy to announce that the app to run the SETAR model from my previous paper <https://link.springer.com/article/10.1007/s00362-023-01472-7> (Active-set based block coordinate descent algorithm in group LASSO for self-exciting threshold autoregressive model) is now available online: <https://umk-jaffri-nasir-tar-glasso.share.connect.posit.cloud/>. More features to be added soon.
 
